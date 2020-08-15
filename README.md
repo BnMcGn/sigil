@@ -22,7 +22,8 @@ Sigil is a Parenscript to Javascript command line compiler and REPL.
 Usage
 -----
 
-    sigil [-i] [-I load-directory] [--eval <CL code>] [--pseval <PS Code>] app.ps > app.js
+    sigil [-i] [-I load-directory] [-C <upcase|downcase|preserve|invert>] [--eval <CL code>] 
+    [--pseval <PS Code>] app.ps > app.js
 
 Installation
 ------------
@@ -43,6 +44,14 @@ Load
 Sigil adds the 'load' command to Parenscript, so you can load macros
 and other files during compilation, like (load "macros.ps"). Use -I to
 specify the load paths to search.
+
+Readtable Case
+---------------
+
+The readtable case can be set on the sigil command line with the -C 
+switch. Valid values are upcase, downcase, preserve, and invert. All
+items that follow will be read with the specified case. The -C switch
+can be used multiple times on a single command.
 
 Interactive REPL
 ----------------

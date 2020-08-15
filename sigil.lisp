@@ -80,6 +80,12 @@
                (let ((dir (pop argv)))
                  (push (probe-file dir) *include-paths*)))
               ((string= arg "-i") (repl))
+              ((string= arg "-C")
+               (let ((rtcase (member (pop argv) '(:upcase :downcase :preserve :invert)
+                                     :test #'string-equal)))
+                 (unless rtcase
+                   (error "Readtable case must be one of: upcase downcase preserve invert"))
+                 (setf (readtable-case *readtable*) (car rtcase))))
               ((string= arg "--eval")
                (let ((code (pop argv)))
                  (when *verbose*
@@ -106,3 +112,4 @@
                               (sb-ext:exit :code 1))))
                        (ps2js f))))))))))
       (repl)))
+
