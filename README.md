@@ -65,6 +65,12 @@ License
 
 MIT
 
---
+Author
+------
+
 Burton Samograd
-2015
+
+Maintainer
+----------
+
+Ben McGunigle (bnmcgn at gmail.com)
