@@ -5,39 +5,18 @@
 
 ;; add 'load' to parenscript compiler
 (ps:defpsmacro load (file)
-  ;;(format *error-output* "~A~%" *include-paths*)
   (let (code)
     (catch 'found
       (dolist (include-path *include-paths*)
         (let ((path (concatenate 'string (directory-namestring include-path) file)))
-          ;;(format *error-output* "Searching: ~A~%" path)
           (when (probe-file path)
             (with-open-file (f path)
-              ;;(format *error-output* "Found: ~A~%" path)
               (do
                ((form (read f nil) (read f nil)))
                ((not form))
                 (push form code)))
             (throw 'found (cons 'progn (nreverse code))))))
-      (format *error-output* "sigil: Cannot find load file: ~A~%" file))
-    ))
-
-(defun ps2js (f)
-  (in-package :ps)
-  (do
-   ((form (read f nil) (read f nil)))
-   ((not form))
-    (when *verbose*
-      (format t  "/* ~A */~%~%" form))
-    (let ((js-output (format nil "~A~%~%" (ps:ps* form))))
-      (when (some #'alphanumericp js-output)
-        (format t js-output)))))
-
-(defmacro while (test &body body)
-  `(loop
-     (when (not ,test)
-       (return))
-     ,@body))
+      (format *error-output* "sigil: Cannot find load file: ~A~%" file))))
 
 (defun repl ()
   (let* ((node (run-program "node" '("-i") :search t :input :stream :output :stream :wait nil))
@@ -64,52 +43,53 @@
         (end-of-file () (sb-ext:exit))
         ))))
 
+(defun printv (item &optional (cr 0))
+  (when *verbose*
+    (format t "/* --eval ~A~% */" item)
+    (dotimes (i cr) ;; Add some carriage returns on request
+      (declare (ignore i))
+      (terpri)))
+  item)
+
+(defun eval-lisp (code)
+  (in-package :ps)
+  (eval (printv (read-from-string code))))
+
+(defun eval-ps (code)
+  (ps:ps* (printv (read-from-string code))))
+
+(defun ps2js (fh)
+  (in-package :ps)
+  (loop
+    for form = (read fh nil 'eof)
+    until (eq form 'eof)
+    do (format t "~a~%~%" (ps:ps* (printv form 2)))))
+
+(defun process-file (fname)
+  (let ((fpath (probe-file fname)))
+    (when fpath
+      (let ((*include-paths* (cons (directory-namestring fpath) *include-paths*)))
+        (with-open-file (fh fname)
+          (handler-bind
+              ((error
+                 (lambda (e)
+                   (format *error-output* "~a~%" e)
+                   (sb-ext:exit :code 1))))
+            (ps2js fh)))))))
+
 (defun main (argv)
   (push (probe-file ".") *include-paths*)
   (if (cdr argv)
-      (progn
-        (pop argv)
-	;;; check for verbose flag
-        (when (member "-v" argv :test #'string=)
-          (setf *verbose* t)
-          (setf argv (remove "-v" argv :test #'string=)))
-        (while argv
-          (let ((arg (pop argv)))
-            (cond
-              ((string= arg "-I")
-               (let ((dir (pop argv)))
-                 (push (probe-file dir) *include-paths*)))
-              ((string= arg "-i") (repl))
-              ((string= arg "-C")
-               (let ((rtcase (member (pop argv) '(:upcase :downcase :preserve :invert)
-                                     :test #'string-equal)))
-                 (unless rtcase
-                   (error "Readtable case must be one of: upcase downcase preserve invert"))
-                 (setf (readtable-case *readtable*) (car rtcase))))
-              ((string= arg "--eval")
-               (let ((code (pop argv)))
-                 (when *verbose*
-                   (format t "/* --eval ~A~% */" (read-from-string code)))
-                 (in-package :ps)
-                 (eval (read-from-string code))))
-              ((string= arg "--pseval")
-               (let ((code (pop argv)))
-                 (when *verbose*
-                   (format t "/* --pseval ~A~% */" (read-from-string code)))
-                 (ps:ps* (read-from-string code))))
-              (t
-               (let ((probe-results (probe-file arg)))
-                 (when probe-results
-                   ;; Add current file directory to include paths so they can relative load properly
-                   (push (directory-namestring probe-results) *include-paths*)
-
-                   (setf *include-paths* (reverse *include-paths*))
-                   (with-open-file (f arg)
-                     (handler-bind
-                         ((error
-                            (lambda (e)
-                              (format *error-output* "~A~%" e)
-                              (sb-ext:exit :code 1))))
-                       (ps2js f))))))))))
+      (loop
+        initially (pop argv)
+        until (not argv)
+        for arg = (pop argv)
+        do (cond
+             ((string= arg "-v") (setf *verbose* t))
+             ((string= arg "-I") (push (probe-file (pop argv)) *include-paths*))
+             ((string= arg "-i") (repl))
+             ((string= arg "-C") (handle-case-change (pop argv)))
+             ((string= arg "--eval" (eval-lisp (pop argv))))
+             ((string= arg "--pseval" (eval-ps (pop argv))))
+             (t (process-file arg))))
       (repl)))
-

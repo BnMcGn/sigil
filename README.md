@@ -22,8 +22,12 @@ Sigil is a Parenscript to Javascript command line compiler and REPL.
 Usage
 -----
 
-    sigil [-i] [-I load-directory] [-C <upcase|downcase|preserve|invert>] [--eval <CL code>] 
+    sigil [-i] [-v] [-I load-directory] [-C <upcase|downcase|preserve|invert>] [--eval <CL code>] 
     [--pseval <PS Code>] app.ps > app.js
+    
+- `-i` starts the parenscript REPL.
+- `-v` enables verbose mode. Each parenscript form will appear as a comment before its javascript representation.
+
 
 Installation
 ------------
@@ -51,7 +55,7 @@ Readtable Case
 The readtable case can be set on the sigil command line with the -C 
 switch. Valid values are upcase, downcase, preserve, and invert. All
 items that follow will be read with the specified case. The -C switch
-can be used multiple times on a single command.
+can be used multiple times in a single command.
 
 Interactive REPL
 ----------------
