@@ -47,9 +47,14 @@
   (when *verbose*
     (format t "/* --eval ~A~% */" item)
     (dotimes (i cr) ;; Add some carriage returns on request
-      (declare (ignore i))
       (terpri)))
   item)
+
+(defun handle-case-change (name)
+  (let ((rtcase (member name '(:upcase :downcase :preserve :invert) :test #'string-equal)))
+    (unless rtcase
+      (error "Readtable case must be one of: upcase downcase preserve invert"))
+    (setf (readtable-case *readtable*) (car rtcase))))
 
 (defun eval-lisp (code)
   (in-package :ps)
@@ -89,7 +94,7 @@
              ((string= arg "-I") (push (probe-file (pop argv)) *include-paths*))
              ((string= arg "-i") (repl))
              ((string= arg "-C") (handle-case-change (pop argv)))
-             ((string= arg "--eval" (eval-lisp (pop argv))))
-             ((string= arg "--pseval" (eval-ps (pop argv))))
+             ((string= arg "--eval") (eval-lisp (pop argv)))
+             ((string= arg "--pseval") (eval-ps (pop argv)))
              (t (process-file arg))))
       (repl)))
