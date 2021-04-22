@@ -94,6 +94,7 @@
              ((string= arg "-I") (push (probe-file (pop argv)) *include-paths*))
              ((string= arg "-i") (repl))
              ((string= arg "-C") (handle-case-change (pop argv)))
+             ((or (string= arg "-q") (string= arg "--quickload")) (ql:quickload (pop argv) :silent t))
              ((string= arg "--eval") (eval-lisp (pop argv)))
              ((string= arg "--pseval") (eval-ps (pop argv)))
              (t (process-file arg))))
